@@ -7,42 +7,66 @@
 #    http://shiny.rstudio.com/
 #
 
-library(shiny)
+library(shiny) ; library(leaflet)
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
-   
-   # Application title
-   titlePanel("Old Faithful Geyser Data"),
-   
-   # Sidebar with a slider input for number of bins 
-   sidebarLayout(
-      sidebarPanel(
-         sliderInput("bins",
-                     "Number of bins:",
-                     min = 1,
-                     max = 50,
-                     value = 30)
-      ),
-      
-      # Show a plot of the generated distribution
-      mainPanel(
-         plotOutput("distPlot")
-      )
-   )
+ui <- navbarPage("ONS Linked Data", id="nav",
+                 
+                 tabPanel("MAP",
+                          div(class="outer",
+                              
+                              tags$head(
+                                # Include our custom CSS
+                                includeCSS("styles.css")
+                                
+                                #includeScript("gomap.js")
+                              ),
+                              
+                              leafletOutput("map", width="100%", height="100%"),
+                              
+                              # Shiny versions prior to 0.11 should use class="modal" instead.
+                              absolutePanel(id = "controls",style = " height: 100vh; overflow-y: auto; ", class = "panel panel-default", fixed = TRUE,
+                                            draggable = TRUE, top = 60, left = "auto", right = 30, bottom = "auto",
+                                            width = 450, height = "auto",
+                                            
+                                            h2("Choose Data to compare")
+                                            
+                                         
+                              ),
+                              
+                              tags$div(id="cite",
+                                       'Data compiled for: ', tags$em('Demonstration ONS & Scottish Government Linked Data'), ' by Jamie Whyte / Swirrl (2017).'
+                              )
+                          )
+                 ),
+                 
+                 tabPanel("DATA",
+                          fluidRow(
+                            column(3,
+                                   div(h3("Datatable")),
+                                   DT::dataTableOutput("table")
+                            )
+                          )
+                 )
 )
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-   
-   output$distPlot <- renderPlot({
-      # generate bins based on input$bins from ui.R
-      x    <- faithful[, 2] 
-      bins <- seq(min(x), max(x), length.out = input$bins + 1)
-      
-      # draw the histogram with the specified number of bins
-      hist(x, breaks = bins, col = 'darkgray', border = 'white')
-   })
+  
+  # Put the default map co-ordinates and zoom level into variables
+  lat <- 57.542788
+  lng <- 0.144708
+  zoom <- 6
+  
+  # Draw the map
+  output$map <- renderLeaflet({
+    
+    leaflet() %>% 
+      addProviderTiles("Esri.WorldStreetMap") %>% 
+      setView(lat = lat, lng = lng, zoom = zoom) 
+      #addPolygons(data = scotcouncil, opacity=1, color = "black", weight = 1, fillOpacity=0.8, layerId = scotcouncil$CODE)
+    
+  })
 }
 
 # Run the application 
