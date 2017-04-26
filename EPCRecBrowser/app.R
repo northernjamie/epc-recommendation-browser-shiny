@@ -7,10 +7,13 @@
 #    http://shiny.rstudio.com/
 #
 
-library(shiny) ; library(leaflet)
+library(shiny) ; library(leaflet) ; library(rgdal) ; library(readr) ; library(dplyr)
+
+
+
 
 # Define UI for application that draws a histogram
-ui <- navbarPage("ONS Linked Data", id="nav",
+ui <- navbarPage("Non-domestic EPC Recommendations", id="nav",
                  
                  tabPanel("MAP",
                           div(class="outer",
@@ -29,13 +32,18 @@ ui <- navbarPage("ONS Linked Data", id="nav",
                                             draggable = TRUE, top = 60, left = "auto", right = 30, bottom = "auto",
                                             width = 450, height = "auto",
                                             
-                                            h2("Choose Data to compare")
+                                            dateRangeInput("dates", label = h3("Date range")),
+                                            
+                                            hr(),
+                                            fluidRow(column(4, verbatimTextOutput("value"))),
+                                            checkboxGroupInput("checkGroup", label = h3("Show recommendations"), 
+                                                               choices = list("Wind Turbine" = 1, "Solar Panels" = 2, "Insulation" = 3))
                                             
                                          
                               ),
                               
                               tags$div(id="cite",
-                                       'Data compiled for: ', tags$em('Demonstration ONS & Scottish Government Linked Data'), ' by Jamie Whyte / Swirrl (2017).'
+                                       'Data compiled for: ', tags$em('Non-domestic EPC recommendations, OpenDataCommunities'), ' by Jamie Whyte / Swirrl (2017).'
                               )
                           )
                  ),
@@ -53,19 +61,35 @@ ui <- navbarPage("ONS Linked Data", id="nav",
 # Define server logic required to draw a histogram
 server <- function(input, output) {
   
+  gmlas <- readOGR("gmauthoritiessimp2perc4326.geojson", "OGRGeoJSON")
+  mancrecs <- readOGR("manchesterrecs.geojson", "OGRGeoJSON")
+  #geomergeddata <- read_csv("geomergeddata.csv")
+  turbines <- subset(mancrecs, RecommendationCode == 'EPC-R2')
+  solarpanels <- subset(mancrecs, RecommendationCode =='EPC-R4')
+  #print(nrow(turbines))
   # Put the default map co-ordinates and zoom level into variables
-  lat <- 57.542788
-  lng <- 0.144708
-  zoom <- 6
+  lat <- 53.442788
+  lng <- -2.084708
+  zoom <- 10
   
   # Draw the map
   output$map <- renderLeaflet({
     
     leaflet() %>% 
       addProviderTiles("Esri.WorldStreetMap") %>% 
-      setView(lat = lat, lng = lng, zoom = zoom) 
-      #addPolygons(data = scotcouncil, opacity=1, color = "black", weight = 1, fillOpacity=0.8, layerId = scotcouncil$CODE)
+      setView(lat = lat, lng = lng, zoom = zoom) %>%
+      addPolylines(data = gmlas, opacity=1, color = "#444444", weight = 2, layerId = gmlas$CODE)
+      #addCircleMarkers(data=turbines,lng = ~X, lat = ~Y, popup = ~Address, color="#165eee", stroke = FALSE, fillOpacity = 0.3) %>%
+      #addCircleMarkers(data=solarpanels,lng = ~X, lat = ~Y, popup = ~Address, color="#3da23a",stroke = FALSE, fillOpacity = 0.3)
+      
+  })
+  
+  observeEvent(input$checkGroup, {
+    print("YES!")
     
+    leafletProxy("map") %>%
+      addCircleMarkers(data=solarpanels,lng = ~X, lat = ~Y, popup = ~Address, color="#3da23a",stroke = FALSE, fillOpacity = 0.3)
+        
   })
 }
 
