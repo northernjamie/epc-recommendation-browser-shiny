@@ -36,6 +36,18 @@ ui <- navbarPage("Non-domestic EPC Recommendations", id="nav",
                                             
                                             hr(),
                                             fluidRow(column(4, verbatimTextOutput("value"))),
+                                            checkboxInput("check_EPCC1", label = "The default chiller efficiency is chosen. It is recommended that the chiller system be investigated to gain an understanding of its efficiency and possible improvements.", value = TRUE),
+                                            checkboxInput("check_EPCC2", label = "Chiller efficiency is low. Consider upgrading chiller plant."),
+                                            checkboxInput("check_EPCC3", label = "Ductwork leakage is high. Inspect and seal ductwork."),
+                                            checkboxInput("check_EPCE1", label = "Some floors are poorly insulated - introduce and/or improve insulation. Add insulation to the exposed surfaces of floors adjacent to underground, unheated spaces or exterior."),
+                                            checkboxInput("check_EPCE2", label = "Roof is poorly insulated. Install or improve insulation of roof."),
+                                            checkboxInput("check_EPCE3", label = "Some solid walls are poorly insulated - introduce or improve internal wall insulation."),
+                                            checkboxInput("check_EPCE4", label = "Some walls have uninsulated cavities - introduce cavity wall insulation."),
+                                            checkboxInput("check_EPCE5", label = "Some windows have high U-values - consider installing secondary glazing."),
+                                            checkboxInput("check_EPCE6", label = "Some loft spaces are poorly insulated - install/improve insulation."),
+                                            checkboxInput("check_EPCE7", label = "Carry out a pressure test, identify and treat identified air leakage."),
+                                            checkboxInput("check_EPCE8", label = "Some glazing is poorly insulated. Replace/improve glazing and/or frames."),
+                                            
                                             checkboxGroupInput("checkGroup", label = h3("Show recommendations"), 
                                                                choices = list("Wind Turbine" = 1, "Solar Panels" = 2, "Insulation" = 3))
                                             
@@ -64,8 +76,11 @@ server <- function(input, output) {
   gmlas <- readOGR("gmauthoritiessimp2perc4326.geojson", "OGRGeoJSON")
   mancrecs <- readOGR("manchesterrecs.geojson", "OGRGeoJSON")
   #geomergeddata <- read_csv("geomergeddata.csv")
-  turbines <- subset(mancrecs, RecommendationCode == 'EPC-R2')
-  solarpanels <- subset(mancrecs, RecommendationCode =='EPC-R4')
+  EPCC1dat <- subset(mancrecs, RecommendationCode =='EPC-C1')
+  EPCC2dat <- subset(mancrecs, RecommendationCode =='EPC-C2')
+  EPCC3dat <- subset(mancrecs, RecommendationCode =='EPC-C3')
+  
+  
   #print(nrow(turbines))
   # Put the default map co-ordinates and zoom level into variables
   lat <- 53.442788
@@ -78,19 +93,40 @@ server <- function(input, output) {
     leaflet() %>% 
       addProviderTiles("Esri.WorldStreetMap") %>% 
       setView(lat = lat, lng = lng, zoom = zoom) %>%
-      addPolylines(data = gmlas, opacity=1, color = "#444444", weight = 2, layerId = gmlas$CODE)
-      #addCircleMarkers(data=turbines,lng = ~X, lat = ~Y, popup = ~Address, color="#165eee", stroke = FALSE, fillOpacity = 0.3) %>%
-      #addCircleMarkers(data=solarpanels,lng = ~X, lat = ~Y, popup = ~Address, color="#3da23a",stroke = FALSE, fillOpacity = 0.3)
+      addPolylines(data = gmlas, opacity=1, color = "#444444", weight = 2, layerId = gmlas$CODE) %>%
+      addCircleMarkers(data=EPCC1dat,lng = ~X, lat = ~Y, popup = ~Address, color="#3da23a",stroke = FALSE, fillOpacity = 0.3, group = 'EPCC1') %>%
+      addCircleMarkers(data=EPCC2dat,lng = ~X, lat = ~Y, popup = ~Address, color="#5ea23a",stroke = FALSE, fillOpacity = 0.3, group = 'EPCC2')
+      addCircleMarkers()
       
   })
   
-  observeEvent(input$checkGroup, {
-    print("YES!")
+  observe({
     
+    if (input$check_EPCC1 == TRUE) {
     leafletProxy("map") %>%
-      addCircleMarkers(data=solarpanels,lng = ~X, lat = ~Y, popup = ~Address, color="#3da23a",stroke = FALSE, fillOpacity = 0.3)
-        
-  })
+        showGroup('EPCC1')
+    } else {
+     
+       leafletProxy("map") %>%
+        hideGroup('EPCC1')
+    }
+    
+    if (input$check_EPCC2 == TRUE) {
+      leafletProxy("map") %>%
+        hideGroup('EPCC2')
+    } else {
+      
+      leafletProxy("map") %>%
+        hideGroup('EPCC2')
+    }
+  
+    
+    })
+    
+
+  
+  
+  
 }
 
 # Run the application 
